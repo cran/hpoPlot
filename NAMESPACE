@@ -1,0 +1,5 @@
+exportPattern("^[[:alpha:]]+")
+import(Rgraphviz)
+import(functional)
+import(plotrix)
+import(Hmisc)
