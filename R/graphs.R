@@ -201,12 +201,12 @@ get.hpo.graph <- function(
 
 	if (is.null(nodeAttrs)) {
 		attrs <- list(
-			fontsize=if (class(font.sizes) == "function") font.sizes(hpo.terms, terms, plotting.context) else font.sizes %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
-			shape=if (class(shapes) == "function") shapes(hpo.terms, terms, plotting.context) else shapes %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
-			width=if (class(sizes) == "function") sizes(hpo.terms, terms, plotting.context) else sizes %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
-			color=if (class(borders) == "function") borders(hpo.terms, terms, plotting.context) else borders %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
-			fillcolor=if (class(colours) == "function") colours(hpo.terms, terms, plotting.context) else colours %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
-			label=if (class(labels) == "function") labels(hpo.terms, terms, plotting.context) else labels %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x) 
+			fontsize=if (class(font.sizes) == "function") font.sizes(hpo.terms, terms, plotting.context) else font.sizes %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
+			shape=if (class(shapes) == "function") shapes(hpo.terms, terms, plotting.context) else shapes %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
+			width=if (class(sizes) == "function") sizes(hpo.terms, terms, plotting.context) else sizes %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
+			color=if (class(borders) == "function") borders(hpo.terms, terms, plotting.context) else borders %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
+			fillcolor=if (class(colours) == "function") colours(hpo.terms, terms, plotting.context) else colours %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x),
+			label=if (class(labels) == "function") labels(hpo.terms, terms, plotting.context) else labels %>% (function(x) if (length(x) == 1) rep(x, times=length(terms)) else x) %>% (function(x) if (is.null(names(x))) { names(x) <- terms; x } else x) 
 		)
 	} else {
 		attrs <- nodeAttrs
@@ -229,15 +229,16 @@ get.hpo.graph <- function(
 #' @template hpo.terms
 #' @template terms 
 #' @template plotting.context
+#' @template hpo.phenotypes 
+#' @param term.frequencies Numeric vector of population frequencies of terms (named by term codes)
 #' @param colours Function to set the colours of the HPO nodes in the graph based on the plotting context, or a character vector of colours
 #' @param labels Function to set the labels of the HPO nodes in the graph based on the plotting context, or a character vector of node labels
 #' @param borders Function to set the borders of the HPO nodes in the graph based on the plotting context, or a character vector of border colours
 #' @param sizes Function to set the sizes of the HPO nodes in the graph based on the plotting context, or a numeric vector of node sizes
 #' @param font.sizes Function to set the font sizes of the text to be placed in the HPO nodes in the graph based on the plotting context, or an integer vector of font sizes
 #' @param shapes Function to set the shapes of the HPO nodes in the graph based on the plotting context, or a character vector of shape names (defaults to 'circle')
-#' @param main.title Title for plot
-#' @param draw.legend Boolean indicating whether to draw legend
 #' @param nodeAttrs Pass nodeAttrs directly to rgraphviz plotting function
+#' @param ... Extra arguments to pass to plot
 #' @return Plots graph
 #' @seealso \code{\link{get.hpo.graph}}
 #' @examples
@@ -253,21 +254,31 @@ hpo.plot <- function(
 	hpo.terms,
 	terms=apply.term.filters(hpo.terms=hpo.terms, plotting.context=plotting.context, term.filters=list()),
 	plotting.context=NULL,
+	hpo.phenotypes=NULL,
+	term.frequencies=NULL,
 	colours=rep("cyan", length(terms)),
 	labels=get.simple.node.labels,
 	borders=get.no.borders,
 	sizes=get.standard.sizes,
 	font.sizes=rep(30, length(terms)),
 	shapes=rep("circle", length(terms)),
-	main.title=NULL,
-	draw.legend=FALSE,
-	nodeAttrs=NULL
+	nodeAttrs=NULL,
+	...
 ) {
+	original.mar <- par("mar")
+
+	if (!is.null(hpo.phenotypes))
+		plotting.context$hpo.phenotypes <- hpo.phenotypes
+	if (!is.null(term.frequencies))
+		plotting.context$information <- -log(term.frequencies)
+
 	graph <- get.hpo.graph(
 		hpo.terms=hpo.terms,
 		terms=terms,
 		plotting.context=plotting.context,
 		colours=colours,
+		font.sizes=font.sizes,
+		shapes=shapes,
 		labels=labels,
 		borders=borders,
 		sizes=sizes,
@@ -276,8 +287,10 @@ hpo.plot <- function(
 	
 	plot(
 		graph,
-		main=main.title
+		...
 	)
+
+	par(mar=original.mar)
 }
 	
 #' Function to set colours of HPO nodes in plot to distinguish terms belonging to different sets of phenotypes

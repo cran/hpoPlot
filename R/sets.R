@@ -65,13 +65,16 @@ get.term.adjacency.matrix <- function(hpo.terms, terms) {
 #' @import magrittr
 get.term.descendancy.matrix <- function(hpo.terms, terms) {
 	# 'row is column ancestor'
-	sapply(
-		setNames(terms, terms),
-		function(term) setNames(
-			terms %in% setdiff(hpo.terms$ancestors[[term]], term),
-			terms
+	if (length(terms)==1)
+		matrix(FALSE, 1, 1, dimnames=rep(list(terms), 2))
+	else
+		sapply(
+			setNames(terms, terms),
+			function(term) setNames(
+				terms %in% setdiff(hpo.terms$ancestors[[term]], term),
+				terms
+			)
 		)
-	)
 }
 
 #' Intersect set of terms with branches of HPO

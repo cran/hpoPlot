@@ -29,7 +29,7 @@ To ensure all of the ancestor terms (according to the DAG structure of the HPO) 
 hpo.plot(hpo.terms, terms=get.ancestors(hpo.terms, c("HP:0001873", "HP:0011877")))
 ```
 
-Terms which just link a parent to a child term can be removed to save space with `remove.links`:
+Terms which just link a parent to a child term can be removed to save space, whilst retaining the structure of the relevant part of the ontology, with `remove.links`:
 
 ```{r}
 hpo.plot(hpo.terms, terms=remove.links(hpo.terms, get.ancestors(hpo.terms, c("HP:0001873", "HP:0011877"))))
