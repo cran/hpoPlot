@@ -16,21 +16,46 @@ get.shortened.names <- function(hpo.terms, terms) gsub(
 (function (x) gsub("^\\s+|\\s+$", "", x)) %>%
 sapply(simpleCap)
 
+str.ancs.from.pars <- function(pars, chld) {
+	stopifnot(identical(names(pars), names(chld)))
+	int.pars <- c(split(as.integer(factor(unlist(pars), levels=names(pars))), unlist(mapply(SIMPLIFY=FALSE, FUN=rep, names(pars), sapply(pars, length)))), setNames(nm=setdiff(names(pars), unlist(pars)), rep(list(integer(0)), length(setdiff(names(pars), unlist(pars))))))[names(pars)]
+	int.chld <- c(split(as.integer(factor(unlist(chld), levels=names(chld))), unlist(mapply(SIMPLIFY=FALSE, FUN=rep, names(chld), sapply(chld, length)))), setNames(nm=setdiff(names(chld), unlist(chld)), rep(list(integer(0)), length(setdiff(names(chld), unlist(chld))))))[names(chld)]
+
+	setNames(nm=names(pars), lapply(ancs.from.pars(
+		int.pars,
+		int.chld
+	), function(x) names(pars)[x]))
+}
+
+ancs.from.pars <- function(pars, chld) {
+	ancs <- as.list(1:length(pars))
+	done <- sapply(pars, function(x) length(x) == 0)
+	cands <- which(done)
+	new.done <- 1:length(cands)
+	while (!all(done)) {
+		cands <- unique(unlist(chld[cands[new.done]]))
+		new.done <- which(sapply(pars[cands], function(x) all(done[x])))
+		done[cands[new.done]] <- TRUE
+		ancs[cands[new.done]] <- mapply(SIMPLIFY=FALSE, FUN=c, lapply(cands[new.done], function(x) unique(unlist(ancs[pars[[x]]]))), cands[new.done])
+	}
+	ancs
+}
+
 #' Get R-Object representation of ontology from obo file
 #'
 #' @param file File path of obo file
-#' @param species Character vector - "H" for HPO, "M" for MPO
+#' @param qualifier Character vector - "HP" for HPO, "MP" for MPO, etc.
 #' @return R-Object (list) representing ontology
 #' @export
 #' @import magrittr
-get.ontology <- function(file, species="H") {
+get.ontology <- function(file, qualifier="HP") {
 	hpo.obo.lines <- readLines(file)
 
-	hpo.term.id.pattern <- paste("^id: (", species, "P:\\d+)", sep="")
+	hpo.term.id.pattern <- paste("^id: (", qualifier, ":\\d+)", sep="")
 	hpo.term.name.pattern <- paste("^name: (\\.*)", sep="")
-	hpo.term.parent.pattern <- paste("^is_a: (", species, "P:\\d+)", sep="")
-	hpo.term.pattern <- paste("", species, "P:\\d+", sep="")
-	hpo.term.alt.id.pattern <- paste("^alt_id: (", species, "P:\\d+)", sep="")
+	hpo.term.parent.pattern <- paste("^is_a: (", qualifier, ":\\d+)", sep="")
+	hpo.term.pattern <- paste("", qualifier, ":\\d+", sep="")
+	hpo.term.alt.id.pattern <- paste("^alt_id: (", qualifier, ":\\d+)", sep="")
 
 	hpo.term.id.lines <- grep(hpo.term.id.pattern, hpo.obo.lines)
 	hpo.term.name.lines <- grep(hpo.term.name.pattern, hpo.obo.lines)
@@ -79,7 +104,7 @@ get.ontology <- function(file, species="H") {
 			breaks=c(hpo.term.id.lines,length(hpo.obo.lines)+1),
 			labels=hpo.terms$id
 		)
-	)
+	)[hpo.terms$id]
 	
 	hpo.alt.id.matches <- regexec(
 		hpo.term.pattern,
@@ -102,49 +127,22 @@ get.ontology <- function(file, species="H") {
 	)	
 	names(hpo.terms$alt.id) <- hpo.alt.ids
 
-	get.ancestors <- function(terms) {
-		result <- unique(terms)
-		for (term in terms)
-			for (parent in hpo.terms$parents[[term]])
-				result <- union(result, get.ancestors(parent))
-		result
-	}
-
 	names(hpo.terms$id) <- hpo.terms$id
 
-	hpo.terms$children <- lapply(hpo.terms$id, function(x) c())
-	for (hpo.term in hpo.terms$id)
-		for (parent.term in hpo.terms$parents[[hpo.term]])
-			hpo.terms$children[[parent.term]] <- c(
-				hpo.terms$children[[parent.term]],
-				hpo.term
-			)
+	hpo.terms$children <- c(
+		lapply(FUN=as.character, X=split(
+			unlist(mapply(SIMPLIFY=FALSE, FUN=rep, names(hpo.terms$parents), sapply(hpo.terms$parents, length))),
+			unlist(hpo.terms$parents)
+		)),
+		setNames(nm=setdiff(hpo.terms$id, unlist(hpo.terms$parents)), rep(list(character(0)), length(setdiff(hpo.terms$id, unlist(hpo.terms$parents)))))
+	)[hpo.terms$id]
 
-	hpo.terms$ancestors <- lapply(
-		hpo.terms$id,
-		get.ancestors
-	)
- 	
-	hpo.terms$siblings <- lapply(
-		hpo.terms$id,
-		function(x) unlist(hpo.terms$children[hpo.terms$parents[[x]]])
-	)
+	hpo.terms$ancestors <- str.ancs.from.pars(hpo.terms$parents, hpo.terms$children)
 
-	hpo.terms$date.downloaded <- Sys.Date()
+	hpo.terms$version.info <- head(n=11, hpo.obo.lines)
 
 	hpo.terms
 }
-
-#' Gets HPO R-Object
-#'
-#' @param file File path of obo file
-#' @return R-Object (list) representing ontology
-#' @export
-#' @import magrittr
-get.hpo.terms <- function(file) get.ontology(
-	file=file,
-	species="H"
-)
 
 #' Remove alternate/deprecated HPO term IDs and swap for new ones
 #'
@@ -232,18 +230,24 @@ get.term.info.content <- function(
 	result
 }
 
+#' Object comprising \code{list} of properties of the HPO, indexed by term ID
+#' 
 #' @name hpo.terms
 #' @title HPO Terms object (based on version 887 of the HPO)
 #' @docType data
 #' @format List of indices containing metadata and structure of HPO 
 NULL
 
+#' Object comprising \code{list} of properties of the MPO, indexed by term ID
+#' 
 #' @name mpo.terms
 #' @title MPO Terms object
 #' @docType data
 #' @format List of indices containing metadata and structure of MPO 
 NULL
 
+#' List containing cross-species ontology (MPO to HPO) information - character vectors of HPO terms indexed by associated MPO term IDs
+#'
 #' @name mpo.to.hpo
 #' @title Object containing data for mapping between MPO and HPO
 #' @docType data

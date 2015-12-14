@@ -41,9 +41,9 @@ terms <- remove.links(hpo.terms, get.ancestors(hpo.terms, c("HP:0001873", "HP:00
 hpo.plot(hpo.terms, terms=terms, colours=rainbow(length(terms)), labels=terms)
 ```
 
-Functions can be passed to hpo.plot which which automatically select colours and labels:
+Functions can be passed to hpo.plot which automatically select graphical parameters, e.g. the labels:
 ```{r}
-hpo.plot(hpo.terms, terms=terms, labels=get.code.node.labels, colours=get.white.nodes)
+hpo.plot(hpo.terms, terms=terms, labels=get.code.node.labels)
 ```
 
 ## Plotting context

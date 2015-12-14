@@ -155,6 +155,7 @@ apply.term.filters <- function(hpo.terms, plotting.context, term.filters, starti
 #' @param font.sizes Function to set the font sizes of the text to be placed in the HPO nodes in the graph based on the plotting context, or an integer vector of font sizes
 #' @param shapes Function to set the shapes of the HPO nodes in the graph based on the plotting context, or a character vector of shape names (defaults to 'circle')
 #' @param nodeAttrs Pass nodeAttrs directly to rgraphviz plotting function
+#' @param arrowAttrs List of properties to set for arrows (note, these properties will be used for all arrow)
 #' @return graphAM S4 object 
 #' @seealso \code{\link{hpo.plot}}
 #' @examples
@@ -180,13 +181,14 @@ get.hpo.graph <- function(
 	hpo.terms,
 	terms=apply.term.filters(hpo.terms=hpo.terms, plotting.context=plotting.context, term.filters=list()),
 	plotting.context=NULL,
-	colours=get.white.nodes,
+	colours="white",
 	labels=get.simple.node.labels,
-	borders=get.grey.borders,
-	sizes=get.standard.sizes,
+	borders="#FFFFFF00",
+	sizes=0.75,
 	font.sizes=rep(30, length(terms)),
 	shapes=rep("circle", length(terms)),
-	nodeAttrs=NULL
+	nodeAttrs=NULL,
+	arrowAttrs=list(color="#000000")
 ) {
 	adj.mat <- get.term.pseudo.adjacency.matrix(
 		hpo.terms,
@@ -219,6 +221,8 @@ get.hpo.graph <- function(
 				"solid",
 				"dashed"
 			)
+			for (aai in 1:length(arrowAttrs)) slot(result@AgEdge[[i]], names(arrowAttrs)[aai]) <- arrowAttrs[[aai]]
+			
 		}
 
 	result
@@ -238,6 +242,7 @@ get.hpo.graph <- function(
 #' @param font.sizes Function to set the font sizes of the text to be placed in the HPO nodes in the graph based on the plotting context, or an integer vector of font sizes
 #' @param shapes Function to set the shapes of the HPO nodes in the graph based on the plotting context, or a character vector of shape names (defaults to 'circle')
 #' @param nodeAttrs Pass nodeAttrs directly to rgraphviz plotting function
+#' @param arrowAttrs List of properties to set for arrows (note, these properties will be used for all arrow)
 #' @param ... Extra arguments to pass to plot
 #' @return Plots graph
 #' @seealso \code{\link{get.hpo.graph}}
@@ -256,13 +261,14 @@ hpo.plot <- function(
 	plotting.context=NULL,
 	hpo.phenotypes=NULL,
 	term.frequencies=NULL,
-	colours=rep("cyan", length(terms)),
+	colours="cyan",
 	labels=get.simple.node.labels,
-	borders=get.no.borders,
-	sizes=get.standard.sizes,
+	borders="#FFFFFF00",
+	sizes=0.75,
 	font.sizes=rep(30, length(terms)),
 	shapes=rep("circle", length(terms)),
 	nodeAttrs=NULL,
+	arrowAttrs=list(color="#000000"),
 	...
 ) {
 	original.mar <- par("mar")
@@ -282,7 +288,8 @@ hpo.plot <- function(
 		labels=labels,
 		borders=borders,
 		sizes=sizes,
-		nodeAttrs=nodeAttrs
+		nodeAttrs=nodeAttrs,
+		arrowAttrs=arrowAttrs
 	)
 	
 	plot(
@@ -734,47 +741,4 @@ get.informative.node.labels <- function(hpo.terms, terms, plotting.context) setN
 #' @export
 #' @import magrittr
 get.code.node.labels <- function(hpo.terms, terms, plotting.context) setNames(terms, terms)
-
-#' Function to size HPO nodes in plot 0.75 inches across
-#'
-#' @template hpo.terms
-#' @template terms
-#' @template plotting.context
-#' @return Character vector of sizes, named by term
-#' @export
-#' @import magrittr
-get.standard.sizes <- function(hpo.terms, terms, plotting.context) setNames(rep(0.75, length(terms)), terms)
-
-#' Function to border HPO nodes in plot with grey borders
-#'
-#' @template hpo.terms
-#' @template terms
-#' @template plotting.context
-#' @return Character vector of sizes, named by term
-#' @export
-#' @import magrittr
-get.grey.borders <- function(hpo.terms, terms, plotting.context) setNames(rep("#00000080", length(terms)), terms)
-
-#' Function to border HPO nodes in plot with transparent borders
-#'
-#' @template hpo.terms
-#' @template terms
-#' @template plotting.context
-#' @return Character vector of sizes, named by term
-#' @export
-#' @import magrittr
-get.no.borders <- function(hpo.terms, terms, plotting.context) setNames(rep("#00000000", length(terms)), terms)
-
-#' Function to colour HPO nodes in plot white
-#'
-#' @template hpo.terms
-#' @template terms
-#' @template plotting.context
-#' @return Character vector of sizes, named by term
-#' @export
-#' @import magrittr
-get.white.nodes <- function(hpo.terms, terms, plotting.context) list(
-	colours=setNames(rep("White", length(terms)), terms),
-	legend.colours=NULL
-)
 

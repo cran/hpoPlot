@@ -57,22 +57,24 @@ get.term.adjacency.matrix <- function(hpo.terms, terms) {
 #' 
 #' @template hpo.terms
 #' @template terms
+#' @param rows Rows for resultant matrix (defaults to \code{terms})
+#' @param cols Cols for resultant matrix (defaults to \code{terms})
 #' @return A logical descendancy matrix of \code{terms} by \code{terms} based on DAG structure of HPO, where by the row  term is an ancestor of the column term if result[row.term,col.term] == TRUE
 #' @examples 
 #' data(hpo.terms)
 #' get.term.descendancy.matrix(hpo.terms, c("HP:0001873", "HP:0011877"))
 #' @export
 #' @import magrittr
-get.term.descendancy.matrix <- function(hpo.terms, terms) {
+get.term.descendancy.matrix <- function(hpo.terms, terms=NULL, rows=terms, cols=terms) {
 	# 'row is column ancestor'
 	if (length(terms)==1)
 		matrix(FALSE, 1, 1, dimnames=rep(list(terms), 2))
 	else
 		sapply(
-			setNames(terms, terms),
+			setNames(cols, cols),
 			function(term) setNames(
-				terms %in% setdiff(hpo.terms$ancestors[[term]], term),
-				terms
+				rows %in% setdiff(hpo.terms$ancestors[[term]], term),
+				rows
 			)
 		)
 }

@@ -16,7 +16,7 @@ terms <- remove.links(hpo.terms, get.ancestors(hpo.terms, c("HP:0001873", "HP:00
 hpo.plot(hpo.terms, terms=terms, colours=rainbow(length(terms)), labels=terms)
 
 ## ------------------------------------------------------------------------
-hpo.plot(hpo.terms, terms=terms, labels=get.code.node.labels, colours=get.white.nodes)
+hpo.plot(hpo.terms, terms=terms, labels=get.code.node.labels)
 
 ## ------------------------------------------------------------------------
 plotting.context <- list(frequency=seq(from=0, to=1, by=1/length(terms)))
